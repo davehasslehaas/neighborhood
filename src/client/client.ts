@@ -47,7 +47,10 @@ document.body.appendChild(stats.dom)
 
 
 const gui = new GUI()
-const cubeFolder = gui.addFolder('Cube')
+const daveCube = gui.addFolder('Daves cube')
+//cubeFolder.open
+
+const cubeFolder = gui.addFolder('Ians Cube')
 cubeFolder.add(cube.rotation, 'x', 0, Math.PI * 2)
 cubeFolder.add(cube.rotation, 'y', 0, Math.PI * 2)
 cubeFolder.add(cube.rotation, 'z', 0, Math.PI * 2)
