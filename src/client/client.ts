@@ -1,12 +1,16 @@
+
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { GUI } from 'dat.gui'
 
-const showDebug = false;
-
 const scene = new THREE.Scene()
 scene.add(new THREE.AxesHelper(5))
+
+const light = new THREE.PointLight()
+light.position.set(2.5, 7.5, 15)
+scene.add(light)
 
 const camera = new THREE.PerspectiveCamera(
     75,
@@ -14,48 +18,109 @@ const camera = new THREE.PerspectiveCamera(
     0.1,
     1000
 )
-camera.position.x = 4
-camera.position.y = 4
-camera.position.z = 4
+camera.position.set(0.8, 1.4, 1.0)
 
 const renderer = new THREE.WebGLRenderer()
 renderer.setSize(window.innerWidth, window.innerHeight)
 document.body.appendChild(renderer.domElement)
 
 const controls = new OrbitControls(camera, renderer.domElement)
-controls.target.set(8, 0, 0)
+controls.enableDamping = true
+controls.target.set(0, 1, 0)
 
-const light1 = new THREE.PointLight()
-light1.position.set(10, 10, 10)
-scene.add(light1)
+let mixer: THREE.AnimationMixer
+let modelReady = false
+const animationActions: THREE.AnimationAction[] = []
+let activeAction: THREE.AnimationAction
+let lastAction: THREE.AnimationAction
+const fbxLoader: FBXLoader = new FBXLoader()
 
-const light2 = new THREE.PointLight()
-light2.position.set(-10, 10, 10)
-scene.add(light2)
+fbxLoader.load(
+    'models/kaya.fbx',
+    (object) => {
+        object.scale.set(0.01, 0.01, 0.01)
+        mixer = new THREE.AnimationMixer(object)
 
-const object1 = new THREE.Mesh(
-    new THREE.SphereGeometry(),
-    new THREE.MeshPhongMaterial({ color: 0xff0000 })
+        const animationAction = mixer.clipAction(
+            (object as THREE.Object3D).animations[0]
+        )
+        animationActions.push(animationAction)
+        animationsFolder.add(animations, 'default')
+        activeAction = animationActions[0]
+
+        scene.add(object)
+
+        //add an animation from another file
+        fbxLoader.load(
+            'models/kayaWalkForward.fbx',
+            (object) => {
+                console.log('loaded walk forward')
+
+                const animationAction = mixer.clipAction(
+                    (object as THREE.Object3D).animations[0]
+                )
+                animationActions.push(animationAction)
+                animationsFolder.add(animations, 'walking')
+
+                //add an animation from another file
+                fbxLoader.load(
+                    'models/kayaJumping.fbx',
+                    (object) => {
+                        console.log('loaded jumping')
+                        const animationAction = mixer.clipAction(
+                            (object as THREE.Object3D).animations[0]
+                        )
+                        animationActions.push(animationAction)
+                        animationsFolder.add(animations, 'jumping')
+
+                        //add an animation from another file
+                        fbxLoader.load(
+                            'models/kayaSitting.fbx',
+                            (object) => {
+                                console.log('loaded sitting');
+                                (object as THREE.Object3D).animations[0].tracks.shift() //delete the specific track that moves the object forward while running
+                                //console.dir((object as THREE.Object3D).animations[0])
+                                const animationAction = mixer.clipAction(
+                                    (object as THREE.Object3D).animations[0]
+                                )
+                                animationActions.push(animationAction)
+                                animationsFolder.add(animations, 'sitting')
+
+                                modelReady = true
+                            },
+                            (xhr) => {
+                                console.log(
+                                    (xhr.loaded / xhr.total) * 100 + '% loaded'
+                                )
+                            },
+                            (error) => {
+                                console.log(error)
+                            }
+                        )
+                    },
+                    (xhr) => {
+                        console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+                    },
+                    (error) => {
+                        console.log(error)
+                    }
+                )
+            },
+            (xhr) => {
+                console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+            },
+            (error) => {
+                console.log(error)
+            }
+        )
+    },
+    (xhr) => {
+        console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+    },
+    (error) => {
+        console.log(error)
+    }
 )
-object1.position.set(4, 0, 0)
-scene.add(object1)
-object1.add(new THREE.AxesHelper(5))
-
-const object2 = new THREE.Mesh(
-    new THREE.SphereGeometry(),
-    new THREE.MeshPhongMaterial({ color: 0x00ff00 })
-)
-object2.position.set(4, 0, 0)
-object1.add(object2)
-object2.add(new THREE.AxesHelper(5))
-
-const object3 = new THREE.Mesh(
-    new THREE.SphereGeometry(),
-    new THREE.MeshPhongMaterial({ color: 0x0000ff })
-)
-object3.position.set(4, 0, 0)
-object2.add(object3)
-object3.add(new THREE.AxesHelper(5))
 
 window.addEventListener('resize', onWindowResize, false)
 function onWindowResize() {
@@ -65,66 +130,51 @@ function onWindowResize() {
     render()
 }
 
-const gui = new GUI()
-const object1Folder = gui.addFolder('Object1')
-object1Folder.add(object1.position, 'x', 0, 10, 0.01).name('X Position')
-object1Folder
-    .add(object1.rotation, 'y', 0, Math.PI * 2, 0.01)
-    .name('Y Rotation')
-object1Folder.add(object1.scale, 'x', 0, 2, 0.01).name('X Scale')
-object1Folder.open()
-const object2Folder = gui.addFolder('Object2')
-object2Folder.add(object2.position, 'x', 0, 10, 0.01).name('X Position')
-object2Folder
-    .add(object2.rotation, 'y', 0, Math.PI * 2, 0.01)
-    .name('Y Rotation')
-object2Folder.add(object2.scale, 'x', 0, 2, 0.01).name('X Scale')
-object2Folder.open()
-const object3Folder = gui.addFolder('Object3')
-object3Folder.add(object3.position, 'x', 0, 10, 0.01).name('X Position')
-object3Folder
-    .add(object3.rotation, 'y', 0, Math.PI * 2, 0.01)
-    .name('Y Rotation')
-object3Folder.add(object3.scale, 'x', 0, 2, 0.01).name('X Scale')
-object3Folder.open()
-
 const stats = Stats()
 document.body.appendChild(stats.dom)
 
-const debug = document.getElementById('debug1') as HTMLDivElement
+const animations = {
+    default: function () {
+        setAction(animationActions[0])
+    },
+    walking: function () {
+        setAction(animationActions[1])
+    },
+    jumping: function () {
+        setAction(animationActions[2])
+    },
+    sitting: function () {
+        setAction(animationActions[3])
+    }
+}
+
+const setAction = (toAction: THREE.AnimationAction) => {
+    if (toAction != activeAction) {
+        lastAction = activeAction
+        activeAction = toAction
+        //lastAction.stop()
+        lastAction.fadeOut(1)
+        activeAction.reset()
+        activeAction.fadeIn(1)
+        activeAction.play()
+    }
+}
+
+const gui = new GUI()
+const animationsFolder = gui.addFolder('Animations')
+animationsFolder.open()
+
+const clock = new THREE.Clock()
 
 function animate() {
     requestAnimationFrame(animate)
+
     controls.update()
+
+    if (modelReady) mixer.update(clock.getDelta())
+
     render()
-    const object1WorldPosition = new THREE.Vector3()
-    object1.getWorldPosition(object1WorldPosition)
-    const object2WorldPosition = new THREE.Vector3()
-    object2.getWorldPosition(object2WorldPosition)
-    const object3WorldPosition = new THREE.Vector3()
-    object3.getWorldPosition(object3WorldPosition)
-    debug.innerText =
-        'Red\n' +
-        'Local Pos X : ' +
-        object1.position.x.toFixed(2) +
-        '\n' +
-        'World Pos X : ' +
-        object1WorldPosition.x.toFixed(2) +
-        '\n' +
-        '\nGreen\n' +
-        'Local Pos X : ' +
-        object2.position.x.toFixed(2) +
-        '\n' +
-        'World Pos X : ' +
-        object2WorldPosition.x.toFixed(2) +
-        '\n' +
-        '\nBlue\n' +
-        'Local Pos X : ' +
-        object3.position.x.toFixed(2) +
-        '\n' +
-        'World Pos X : ' +
-        object3WorldPosition.x.toFixed(2) +
-        '\n'
+
     stats.update()
 }
 
