@@ -35,6 +35,12 @@ let activeAction: THREE.AnimationAction
 let lastAction: THREE.AnimationAction
 const fbxLoader: FBXLoader = new FBXLoader()
 
+const gui = new GUI()
+const animationsFolder = gui.addFolder('Animations')
+animationsFolder.open()
+const groundFolder = gui.addFolder('GroundType')
+groundFolder.open()
+// Load main character
 fbxLoader.load(
     'models/kaya.fbx',
     (object) => {
@@ -122,6 +128,30 @@ fbxLoader.load(
     }
 )
 
+//  Load car
+fbxLoader.load(
+    'models/NeuroBrain.fbx',
+    (car) => {
+        car.scale.set(0.005, 0.005, 0.005)
+        car.position.set(0.0,0.35,0.0)
+        
+        scene.add(car)  
+    },
+    (xhr) => {
+        console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+    },
+    (error) => {
+        console.log(error)
+    }
+)
+
+
+// Load surface world
+function createGround() {
+ //   const groundGeo = new THREE.PlaneGeometry(1000,1000, sliders.widthSeg, sliders.heightSeg)
+}
+
+
 window.addEventListener('resize', onWindowResize, false)
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight
@@ -148,6 +178,8 @@ const animations = {
     }
 }
 
+
+
 const setAction = (toAction: THREE.AnimationAction) => {
     if (toAction != activeAction) {
         lastAction = activeAction
@@ -160,9 +192,7 @@ const setAction = (toAction: THREE.AnimationAction) => {
     }
 }
 
-const gui = new GUI()
-const animationsFolder = gui.addFolder('Animations')
-animationsFolder.open()
+
 
 const clock = new THREE.Clock()
 
